@@ -11,6 +11,7 @@ from view import MainWindow, ListRow, ListWindow, center_window_on_point
 from dialogs import show_popup, show_file_dialog, show_selection_dialog, show_input_dialog, show_question_dialog
 from extensions.stereogram import StereogramWindow
 from extensions.rose_chart import RoseChartWindow
+from extensions.connect_vertices import ConnectVerticesWindow
 
 
 class UIController:
@@ -31,6 +32,7 @@ class UIController:
         self.view.reproject_button.clicked.connect(self.reproject_button_clicked)
         self.view.export_button.clicked.connect(self.export_button_clicked)
         self.view.graph_button.clicked.connect(self.graph_button_clicked)
+        self.view.connect_button.clicked.connect(self.connect_button_clicked)
 
         # Conecta o botão de OK da tela de importação à função do controlador
         self.view.import_ok_btn.clicked.connect(self.import_ok_button_clicked)
@@ -249,6 +251,7 @@ class UIController:
             self.view.reproject_button.setEnabled(not self.no_coordinates_mode)
             self.view.export_button.setEnabled(True)
             self.view.graph_button.setEnabled(True)
+            self.view.connect_button.setEnabled(not self.no_coordinates_mode)
 
             if not self.no_coordinates_mode:
                 crs_key = self.view.crs_cbx.currentText()
@@ -557,6 +560,15 @@ class UIController:
                 graph_window = RoseChartWindow(self.view, pandas.DataFrame(self.model.gdf))
                 graph_window.show()
                 center_window_on_point(graph_window, self.view.geometry().center())
+
+        except Exception as error:
+            self.handle_exception(error, "graph_button_clicked()", "Ops! Ocorreu um erro.")
+
+    def connect_button_clicked(self):
+        try:
+            connect_window = ConnectVerticesWindow(self.view, self.model.gdf)
+            connect_window.show()
+            center_window_on_point(connect_window, self.view.geometry().center())
 
         except Exception as error:
             self.handle_exception(error, "graph_button_clicked()", "Ops! Ocorreu um erro.")

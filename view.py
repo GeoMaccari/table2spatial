@@ -36,6 +36,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.layout.addWidget(self.export_button, 0, 3, 1, 1)
         self.graph_button = ToolbarButton(self, "Criar gráfico", "graph.png", click_menu=True)
         self.layout.addWidget(self.graph_button, 0, 4, 1, 1)
+        self.connect_button = ToolbarButton(self, "Conectar vértices", "connect.png")
+        self.layout.addWidget(self.connect_button, 0, 5, 1, 1)
 
         self.graph_stereogram_action = self.graph_button.click_menu.addAction("Estereograma")
         self.graph_rosediagram_action = self.graph_button.click_menu.addAction("Diagrama de roseta")
