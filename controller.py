@@ -380,7 +380,7 @@ class UIController:
                 merged_sheets, skipped_sheets = self.model.merge_sheets(merge_column)
                 show_popup(f"As seguintes planilhas foram mescladas com sucesso usando a coluna {merge_column}: "
                            f"{', '.join(merged_sheets)}.\nAs demais planilhas do arquivo foram ignoradas pois não "
-                           f"contêm a coluna de mescla em questão.", parent=self.view)
+                           f"contêm a coluna de mescla em questão ou estão vazias.", parent=self.view)
                 self.update_column_list()
 
         except Exception as error:

@@ -323,8 +323,13 @@ class DataHandler:
             if merge_column in sheet_df.columns:
                 if sheet_df[merge_column].duplicated().any():
                     raise Exception(f"A coluna {merge_column} possui valores duplicados na planilha {s}.")
-                sheets_to_merge.append(s)
-                sheet_dfs.append(self.process_data(sheet_df))
+
+                try:
+                    sheet_dfs.append(self.process_data(sheet_df))
+                    sheets_to_merge.append(s)
+                except IndexError:
+                    sheets_to_skip.append(s)
+
                 merge_column_dtypes.append(sheet_df[merge_column].dtype)
             else:
                 sheets_to_skip.append(s)
