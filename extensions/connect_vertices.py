@@ -15,11 +15,11 @@ class ConnectVerticesWindow(QtWidgets.QMainWindow):
         self.parent = parent
         self.gdf = gdf
 
-        self.setWindowTitle('Conectar vértices')
+        self.setWindowTitle('Conectar pontos')
         self.setWindowIcon(QtGui.QIcon('icons/connect.png'))
         self.setMinimumWidth(270)
 
-        self.layout = QtWidgets.QVBoxLayout()
+        self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.setSpacing(5)
         self.layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 

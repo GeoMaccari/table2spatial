@@ -154,9 +154,10 @@ Você também pode acrescentar novos grupos de medidas a um mesmo estereograma, 
 
 Clique no botão <img src="https://github.com/user-attachments/assets/90457e8d-f5a0-413b-a097-657e4a1bcd30" width="20"> na barra de ferramentas e selecione a opção "Diagrama de roseta". Uma janela de configurações aparecerá. Selecione a coluna que contém os azimutes a serem representados (0 - 360°) e o número de direções do diagrama. 
 
-Ao selecionar 16 direções, por exemplo, os azimutes serão particionados em 16 conjuntos de 22,5° (360 / 16), que correspondem às direções cardeais, colaterais e subcolaterais. O primeiro conjunto incluirá azimutes entre 348,75° (norte - 22,5 / 2) e 11,25° (norte + 22,5 / 2), e assim por diante.
+Ao selecionar 16 direções, por exemplo, os azimutes serão particionados em 16 conjuntos de 22,5° (360 ÷ 16), que correspondem às direções cardeais, colaterais e subcolaterais. O primeiro conjunto incluirá azimutes entre 348,75° (norte - 22,5 ÷ 2) e 11,25° (norte + 22,5 ÷ 2), e assim por diante.
 
-**Obs:** Usando o table2spatial, só é possível gerar diagramas de roseta de uma única variável.
+> [!NOTE]
+> Usando o table2spatial, só é possível gerar diagramas de roseta de uma única variável.
 
 Clique em OK para gerar o diagrama, que aparecerá em um nova janela.
 

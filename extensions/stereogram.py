@@ -51,6 +51,7 @@ class StereogramWindow(QtWidgets.QMainWindow):
         super(StereogramWindow, self).__init__(parent)
         self.parent = parent
         self.df = df.drop(columns="geometry") if "geometry" in df.columns else df
+        self.filter = {}
         self.fig = None
         self.ax = None
         self.legend = {"markers": [], "labels": []}
@@ -80,6 +81,9 @@ class StereogramWindow(QtWidgets.QMainWindow):
         self.measurement_type_cbx = QtWidgets.QComboBox(self.config_page)
         self.measurement_type_cbx.addItems(MEASUREMENT_TYPES)
         self.measurement_type_cbx.setMinimumWidth(300)
+        self.filter_btn = QtWidgets.QToolButton(self.config_page)
+        self.filter_btn.setIcon(QtGui.QIcon("icons/filter.png"))
+        self.filter_btn.setMaximumSize(24, 24)
         self.azimuths_column_lbl = QtWidgets.QLabel(lb1, self.config_page)
         self.azimuths_column_cbx = QtWidgets.QComboBox(self.config_page)
         self.azimuths_column_cbx.addItems(self.filter_angle_columns("azimuth"))
@@ -111,30 +115,32 @@ class StereogramWindow(QtWidgets.QMainWindow):
         self.colormap_cbx.setEnabled(False)
         self.ok_btn = QtWidgets.QPushButton("OK", self.config_page)
 
-        self.config_layout.addWidget(self.title_lbl, 0, 0, 1, 4)
-        self.config_layout.addWidget(self.title_edt, 1, 0, 1, 4)
-        self.config_layout.addWidget(self.measurement_type_lbl, 2, 0, 1, 4)
-        self.config_layout.addWidget(self.measurement_type_cbx, 3, 0, 1, 4)
-        self.config_layout.addWidget(self.azimuths_column_lbl, 4, 0, 1, 1)
-        self.config_layout.addWidget(self.azimuths_column_cbx, 4, 1, 1, 3)
-        self.config_layout.addWidget(self.dips_column_lbl, 5, 0, 1, 1)
-        self.config_layout.addWidget(self.dips_column_cbx, 5, 1, 1, 3)
-        self.config_layout.addWidget(self.rakes_column_lbl, 6, 0, 1, 1)
-        self.config_layout.addWidget(self.rakes_column_cbx, 6, 1, 1, 3)
-        self.config_layout.addWidget(self.plot_poles_chk, 7, 0, 1, 4)
-        self.config_layout.addWidget(self.density_contour_chk, 8, 0, 1, 4)
-        self.config_layout.addWidget(self.show_legend_chk, 9, 0, 1, 4)
-        self.config_layout.addWidget(self.label_lbl, 10, 0, 1, 2)
-        self.config_layout.addWidget(self.label_edt, 10, 2, 1, 2)
-        self.config_layout.addWidget(self.color_lbl, 11, 0, 1, 2)
-        self.config_layout.addWidget(self.color_btn, 11, 2, 1, 2)
-        self.config_layout.addWidget(self.marker_lbl, 12, 0, 1, 2)
-        self.config_layout.addWidget(self.marker_cbx, 12, 2, 1, 2)
-        self.config_layout.addWidget(self.colormap_lbl, 13, 0, 1, 2)
-        self.config_layout.addWidget(self.colormap_cbx, 13, 2, 1, 2)
-        self.config_layout.addWidget(self.ok_btn, 14, 0, 1, 4)
+        self.config_layout.addWidget(self.title_lbl, 0, 0, 1, 8)
+        self.config_layout.addWidget(self.title_edt, 1, 0, 1, 8)
+        self.config_layout.addWidget(self.measurement_type_lbl, 2, 0, 1, 8)
+        self.config_layout.addWidget(self.measurement_type_cbx, 3, 0, 1, 7)
+        self.config_layout.addWidget(self.filter_btn, 3, 7, 1, 1)
+        self.config_layout.addWidget(self.azimuths_column_lbl, 4, 0, 1, 2)
+        self.config_layout.addWidget(self.azimuths_column_cbx, 4, 2, 1, 6)
+        self.config_layout.addWidget(self.dips_column_lbl, 5, 0, 1, 2)
+        self.config_layout.addWidget(self.dips_column_cbx, 5, 2, 1, 6)
+        self.config_layout.addWidget(self.rakes_column_lbl, 6, 0, 1, 2)
+        self.config_layout.addWidget(self.rakes_column_cbx, 6, 2, 1, 6)
+        self.config_layout.addWidget(self.plot_poles_chk, 7, 0, 1, 8)
+        self.config_layout.addWidget(self.density_contour_chk, 8, 0, 1, 8)
+        self.config_layout.addWidget(self.show_legend_chk, 9, 0, 1, 8)
+        self.config_layout.addWidget(self.label_lbl, 10, 0, 1, 4)
+        self.config_layout.addWidget(self.label_edt, 10, 4, 1, 4)
+        self.config_layout.addWidget(self.color_lbl, 11, 0, 1, 4)
+        self.config_layout.addWidget(self.color_btn, 11, 4, 1, 4)
+        self.config_layout.addWidget(self.marker_lbl, 12, 0, 1, 4)
+        self.config_layout.addWidget(self.marker_cbx, 12, 4, 1, 4)
+        self.config_layout.addWidget(self.colormap_lbl, 13, 0, 1, 4)
+        self.config_layout.addWidget(self.colormap_cbx, 13, 4, 1, 4)
+        self.config_layout.addWidget(self.ok_btn, 14, 0, 1, 8)
 
         self.measurement_type_cbx.currentTextChanged.connect(self.measurement_type_selected)
+        self.filter_btn.clicked.connect(self.filter_button_clicked)
         self.show_legend_chk.checkStateChanged.connect(self.show_legend_checkbox_checked)
         self.color_btn.clicked.connect(self.color_button_clicked)
         self.density_contour_chk.checkStateChanged.connect(self.density_contour_checkbox_checked)
@@ -171,18 +177,13 @@ class StereogramWindow(QtWidgets.QMainWindow):
 
     def filter_angle_columns(self, angle_type):
         try:
-            ranges = {
-                "azimuth": (0, 360),
-                "dip": (0, 90),
-                "rake": (0, 180)
-            }
-            min_angle, max_angle = ranges[angle_type][0], ranges[angle_type][1]
+            ranges = {"azimuth": (0, 360), "dip": (0, 90), "rake": (0, 180)}
+            min_angle, max_angle = ranges[angle_type]
             valid_columns = []
-            for column in self.df:
-                if not self.df[column].dtype in ("float64", "float32", "float16", 'int64', 'uint64', 'int32', 'uint32', 'int16', 'uint16', 'int8', 'uint8'):
-                    continue
-                if self.df[column].dropna().between(min_angle, max_angle).all():
-                    valid_columns.append(column)
+            for col in self.df:
+                if pandas.api.types.is_numeric_dtype(self.df[col]):
+                    if self.df[col].dropna().between(min_angle, max_angle).all():
+                        valid_columns.append(col)
             return valid_columns
         except Exception as error:
             handle_exception(error, "stereogram - filter_angle_columns()", "Ops! Ocorreu um erro!", self)
@@ -190,22 +191,29 @@ class StereogramWindow(QtWidgets.QMainWindow):
     def measurement_type_selected(self):
         try:
             msr_type = self.measurement_type_cbx.currentText()
-            msr_components = MEASUREMENT_TYPES[msr_type]
-            self.azimuths_column_lbl.setText(msr_components[0]+"s:")
-            self.dips_column_lbl.setText(msr_components[1]+"s:")
-            self.rakes_column_lbl.setEnabled(len(msr_components) > 2)
-            self.rakes_column_cbx.setEnabled(len(msr_components) > 2)
-            if not msr_type.startswith("Planos"):
-                self.plot_poles_chk.setChecked(False)
+            comp = MEASUREMENT_TYPES[msr_type]
+            self.azimuths_column_lbl.setText(f"{comp[0]}s:")
+            self.dips_column_lbl.setText(f"{comp[1]}s:")
+            has_rake = len(comp) == 3
+            self.rakes_column_lbl.setEnabled(has_rake)
+            self.rakes_column_cbx.setEnabled(has_rake)
             self.plot_poles_chk.setEnabled(msr_type.startswith("Planos"))
-            if len(msr_components) > 2:
-                self.rakes_column_cbx.addItems(self.filter_angle_columns("rake"))
-            else:
+            self.plot_poles_chk.setChecked(msr_type.startswith("Planos"))
+            if has_rake:
                 self.rakes_column_cbx.clear()
+                self.rakes_column_cbx.addItems(self.filter_angle_columns("rake"))
             if self.label_edt.text() in ("Planos", "Linhas"):
                 self.label_edt.setText("Planos" if msr_type.startswith("Planos") else "Linhas")
         except Exception as error:
             handle_exception(error, "stereogram - measurement_type_selected()", "Ops! Ocorreu um erro!", self)
+
+    def filter_button_clicked(self):
+        try:
+            dialog = FilterWindow(self, self.df, previous_selection=self.filter)
+            if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+                self.filter = dialog.get_all_selected_values()
+        except Exception as error:
+            handle_exception(error, "stereogram - filter_button_clicked()", "Ops! Ocorreu um erro!", self)
 
     def color_button_clicked(self):
         try:
@@ -242,15 +250,41 @@ class StereogramWindow(QtWidgets.QMainWindow):
 
             show_colorbar = False  # TODO adicionar widgets para selecionar se mostra ou não a escala de cores
 
-            azimuths = self.df[self.azimuths_column_cbx.currentText()].to_numpy()
-            dips = self.df[self.dips_column_cbx.currentText()].to_numpy()
+            filtered_df = self.df.copy()
+            for column, selected_values in self.filter.items():
+                if pandas.api.types.is_datetime64_any_dtype(filtered_df[column]):
+                    selected_values = pandas.to_datetime(selected_values)
+                filtered_df = filtered_df[filtered_df[column].isin(selected_values)]
+
+            azimuths_column_name = self.azimuths_column_cbx.currentText()
+            dips_column_name = self.dips_column_cbx.currentText()
+
+            if filtered_df[azimuths_column_name].empty or filtered_df[dips_column_name].empty:
+                toggle_wait_cursor(False)
+                QtWidgets.QMessageBox.warning(
+                    self, "Dados Insuficientes",
+                    "As colunas de azimute e/ou mergulho estão vazias após a aplicação dos filtros. "
+                    "Ajuste seus filtros ou selecione outras colunas."
+                )
+                return
+
+            azimuths = filtered_df[azimuths_column_name].to_numpy()
+            dips = filtered_df[dips_column_name].to_numpy()
             rakes = None
 
             if msr_type.startswith("Planos"):
                 plot_type = "poles" if plot_poles else "planes"
             elif msr_type.startswith("Linhas em planos"):
                 plot_type = "rakes"
-                rakes = self.df[self.rakes_column_cbx.currentText()].dropna().to_numpy()
+                rakes_column_name = self.rakes_column_cbx.currentText()
+                if filtered_df[rakes_column_name].empty:
+                    toggle_wait_cursor(False)
+                    QtWidgets.QMessageBox.warning(
+                        self, "Dados Insuficientes",
+                        "A coluna de rake está vazia após a aplicação dos filtros. "
+                        "Ajuste seus filtros ou selecione outra coluna.")
+                    return
+                rakes = filtered_df[rakes_column_name].to_numpy()
             else:
                 plot_type = "lines"
 
@@ -446,3 +480,149 @@ class StereogramWindow(QtWidgets.QMainWindow):
             os.makedirs(plots_folder)
         image_path = f"{plots_folder}\\stereogram.png"
         self.fig.savefig(image_path, dpi=600, format="png", transparent=True)
+
+
+class FilterWindow(QtWidgets.QDialog):
+    def __init__(self, parent, df, previous_selection=None):
+        super().__init__(parent)
+        self.df = df
+        self.selections_per_column = previous_selection.copy() if previous_selection else {}
+
+        self.setWindowTitle("Filtros")
+        self.setWindowIcon(QtGui.QIcon("icons/filter.png"))
+        self.setMinimumSize(300, 350)
+
+        layout = QtWidgets.QGridLayout(self)
+
+        self.column_cbx = QtWidgets.QComboBox(self)
+        self.column_cbx.addItems(self.df.columns)
+        self.column_cbx.currentTextChanged.connect(self.update_checkboxes)
+
+        self.select_lbl = QtWidgets.QLabel("Selecione valores:", self)
+        self.toggle_btn = QtWidgets.QToolButton(self)
+        self.toggle_btn.setIcon(QtGui.QIcon("icons/select.png"))
+        self.toggle_btn.setToolTip("Selecionar/Desselecionar todos")
+        self.toggle_btn.setFixedSize(20, 20)
+        self.toggle_btn.clicked.connect(self.toggle_all)
+
+        self.scroll_area = QtWidgets.QScrollArea(self)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.viewport().setStyleSheet("background-color: #FBFBFB")
+        self.checkbox_container = QtWidgets.QWidget()
+        self.checkbox_layout = QtWidgets.QVBoxLayout(self.checkbox_container)
+        self.checkbox_layout.addStretch()
+        self.scroll_area.setWidget(self.checkbox_container)
+
+        self.filters_lbl = QtWidgets.QLabel("Filtros atuais:", self)
+        self.remove_btn = QtWidgets.QToolButton(self)
+        self.remove_btn.setIcon(QtGui.QIcon("icons/remove.png"))
+        self.remove_btn.setToolTip("Remover regra de filtro selecionada")
+        self.remove_btn.setFixedSize(20, 20)
+        self.remove_btn.clicked.connect(self.remove_filter_rule)
+        self.filters_list = QtWidgets.QListWidget(self)
+        self.filters_list.setFixedHeight(65)
+
+        self.ok_btn = QtWidgets.QPushButton("Aplicar", self)
+        self.ok_btn.clicked.connect(self.accept)
+
+        layout.addWidget(self.column_cbx, 0, 0, 1, 2)
+        layout.addWidget(self.select_lbl, 1, 0)
+        layout.addWidget(self.toggle_btn, 1, 1, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(self.scroll_area, 2, 0, 1, 2)
+        layout.addWidget(self.filters_lbl, 3, 0)
+        layout.addWidget(self.remove_btn, 3, 1, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(self.filters_list, 4, 0, 1, 2)
+        layout.addWidget(self.ok_btn, 5, 0, 1, 2)
+
+        self.update_checkboxes(self.column_cbx.currentText())
+        self.refresh_filters_list()
+        self.resize(300, 350)
+
+    # Os métodos dessa classe foram feitos via ChatGPT, não tenho nem ideia de como funciona hehe
+
+    def update_checkboxes(self, column_name):
+        while self.checkbox_layout.count() > 1:
+            item = self.checkbox_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        values = self.df[column_name].unique()
+        selected_values = set(map(str, self.selections_per_column.get(column_name, values)))
+
+        for val in values:
+            checkbox = QtWidgets.QCheckBox(str(val))
+            checkbox.setChecked(str(val) in selected_values)
+            checkbox.stateChanged.connect(self.update_selection)
+            self.checkbox_layout.insertWidget(self.checkbox_layout.count() - 1, checkbox)
+
+        self.update_selection()
+
+    def update_selection(self):
+        column_name = self.column_cbx.currentText()
+        selected = []
+        column_dtype = self.df[column_name].dtype
+
+        for i in range(self.checkbox_layout.count() - 1):
+            checkbox = self.checkbox_layout.itemAt(i).widget()
+            if checkbox.isChecked():
+                text = checkbox.text()
+                try:
+                    if pandas.api.types.is_numeric_dtype(column_dtype):
+                        value = float(text) if '.' in text else int(text)
+                    elif pandas.api.types.is_bool_dtype(column_dtype):
+                        value = text.lower() == 'true'
+                    else:
+                        value = text
+                except ValueError:
+                    value = text
+                selected.append(value)
+
+        all_values = set(self.df[column_name].unique())
+        selected_values = set(selected)
+        normalized_all_values = {self._normalize_dtype(v, column_name) for v in all_values}
+        if selected_values == normalized_all_values:
+            self.selections_per_column.pop(column_name, None)
+        else:
+            self.selections_per_column[column_name] = selected
+        self.refresh_filters_list()
+
+    def _normalize_dtype(self, value, column_name):
+        dtype = self.df[column_name].dtype
+        try:
+            if pandas.api.types.is_numeric_dtype(dtype):
+                return float(value)
+            elif pandas.api.types.is_bool_dtype(dtype):
+                return bool(value)
+            else:
+                return str(value)
+        except ValueError:
+            return str(value)
+
+    def refresh_filters_list(self):
+        self.filters_list.clear()
+        for column, values in self.selections_per_column.items():
+            if not values:
+                self.filters_list.addItem(f"{column}: nenhum")
+            else:
+                self.filters_list.addItem(f"{column}: {values}")
+
+    def remove_filter_rule(self):
+        selected_item = self.filters_list.currentItem()
+        if not selected_item:
+            return
+        column_name = selected_item.text().split(":")[0]
+        if column_name in self.selections_per_column:
+            del self.selections_per_column[column_name]
+            if column_name == self.column_cbx.currentText():
+                self.update_checkboxes(column_name)
+            else:
+                self.refresh_filters_list()
+
+    def toggle_all(self):
+        checkboxes = [self.checkbox_layout.itemAt(i).widget() for i in range(self.checkbox_layout.count() - 1)]
+        all_checked = all(cb.isChecked() for cb in checkboxes)
+        for cb in checkboxes:
+            cb.setChecked(not all_checked)
+
+    def get_all_selected_values(self):
+        return self.selections_per_column
