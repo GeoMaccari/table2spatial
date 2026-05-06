@@ -91,7 +91,7 @@ class ConnectVerticesWindow(QtWidgets.QMainWindow):
             self.save_features(features, geometry_type)
             self.close()
         except Exception as error:
-            handle_exception(error, "rose_chart - filter_azimuth_columns()", "Ops! Ocorreu um erro!", self)
+            handle_exception(error, "connect vertices - ok_button_clicked()", "Ops! Ocorreu um erro!", self)
 
     def make_features(self, geometry_type: str, order_column: str | None = None, group_column: str | None = None, close_lines: bool = False):
         """

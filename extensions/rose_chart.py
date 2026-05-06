@@ -7,6 +7,7 @@ import numpy
 import pandas
 import matplotlib.pyplot as plt
 from PyQt6 import QtCore, QtGui, QtWidgets
+from pandas.api.types import is_numeric_dtype
 
 from extensions.shared_functions import handle_exception, toggle_wait_cursor, select_figure_save_location
 
@@ -43,6 +44,7 @@ class RoseChartWindow(QtWidgets.QMainWindow):
         self.divisions_lbl = QtWidgets.QLabel("Número de setores:", self.config_page)
         self.divisions_edt = QtWidgets.QSpinBox(self.config_page)
         self.divisions_edt.setRange(4, 360)
+        self.divisions_edt.setSingleStep(2)
         self.divisions_edt.setValue(16)
         self.ok_btn = QtWidgets.QPushButton("OK", self.config_page)
 
@@ -77,11 +79,15 @@ class RoseChartWindow(QtWidgets.QMainWindow):
     def filter_azimuth_columns(self):
         try:
             valid_columns = []
+
             for column in self.df:
-                if not self.df[column].dtype in ("float64", "float32", "float16", 'int64', 'uint64', 'int32', 'uint32', 'int16', 'uint16', 'int8', 'uint8'):
+                series = self.df[column]
+                if not is_numeric_dtype(series):
                     continue
-                if self.df[column].dropna().between(0, 360).all():
+                values = series.dropna()
+                if not values.empty and values.between(0, 360).all():
                     valid_columns.append(column)
+
             return valid_columns
         except Exception as error:
             handle_exception(error, "rose_chart - filter_azimuth_columns()", "Ops! Ocorreu um erro!", self)
@@ -101,10 +107,10 @@ class RoseChartWindow(QtWidgets.QMainWindow):
 
             toggle_wait_cursor(False)
         except Exception as error:
-            handle_exception(error, "stereogram - ok_button_clicked()", "Ops! Ocorreu um erro ao plotar o gráfico!", self)
+            handle_exception(error, "rose_chart - ok_button_clicked()", "Ops! Ocorreu um erro ao plotar o gráfico!", self)
 
     def load_image(self):
-        img_path = f"{os.getcwd()}\\plots\\rose_chart.png"
+        img_path = os.path.join(os.getcwd(), "plots", "rose_chart.png")
         self.image_btn.setIcon(QtGui.QIcon(img_path))
         pixmap = QtGui.QPixmap(img_path)
         height = int(pixmap.height() * PLOT_WIDTH / pixmap.width())
@@ -122,34 +128,49 @@ class RoseChartWindow(QtWidgets.QMainWindow):
             handle_exception(error, "rose_chart - save_button_clicked()", "Ops! Ocorreu um erro!", self)
 
     def plot_rose_chart(self, azimuths, mirror=False, number_of_sectors=8):
-        sector_width = 360 / number_of_sectors
-        start_angle = 0 - (sector_width / 2)
+        azimuths = numpy.mod(azimuths, 360)
+        azimuths = azimuths[~numpy.isnan(azimuths)]
 
-        bin_edges = numpy.arange(start_angle, 361, sector_width)
-        # Realiza a contagem de valores em cada uma das direções a partir das divisões criadas
-        counts, bin_edges = numpy.histogram(azimuths, bin_edges)
-        # Soma a primeira e a última contagem (ambas são N)
-        counts[0] += counts[-1]
+        sector_width = 360 / number_of_sectors
+
+        shift = sector_width / 2
+        azimuths_shifted = numpy.mod(azimuths + shift, 360)  # shift data so bins align with cardinal directions
+        bin_edges = numpy.linspace(0, 360, number_of_sectors + 1)
+        counts, _ = numpy.histogram(azimuths_shifted, bins=bin_edges)
+
+        if counts.sum() == 0:
+            raise ValueError("Nenhum dado válido para plotar.")
+
+        if mirror:
+            if number_of_sectors % 2 != 0:
+                raise ValueError("Número de setores deve ser par quando a opção de espelhar é selecionada.")
+            half = numpy.sum(numpy.split(counts, 2), axis=0)
+            counts = numpy.concatenate([half, half])
+
+        angles = numpy.deg2rad(numpy.arange(0, 360, sector_width))  # centers after shift
+
+        if self.fig is not None:
+            plt.close(self.fig)
 
         self.fig = plt.figure(figsize=(5, 5), dpi=300)
         ax = self.fig.add_subplot(111, projection='polar')
 
-        if mirror:
-            # Divide os dados em dois conjuntos (0-180 e 180-360), soma os dois e duplica
-            half = numpy.sum(numpy.split(counts, 2), 0)
-            counts = numpy.concatenate([half, half])
+        bar_width = max(numpy.deg2rad(sector_width * 0.75), 0.01)
 
-        ax.bar(numpy.deg2rad(numpy.arange(0, 360, sector_width)), counts, width=numpy.deg2rad(sector_width*0.75),
-               bottom=0.0, color="black")  # edgecolor="white", linewidth=0.1
+        ax.bar(angles, counts, width=bar_width, bottom=0.0, color="black")
 
-        r_grid = (numpy.arange(0, max(counts), max(counts) / 5))
-        r_grid = numpy.append(r_grid, max(counts))
+        max_count = counts.max()
+        if max_count == 0:
+            r_grid = [0]
+        else:
+            step = max(1, int(numpy.ceil(max_count / 5)))
+            r_grid = numpy.arange(0, max_count + step, step)
 
         ax.set_facecolor('white')
         ax.set_theta_zero_location('N')
         ax.set_theta_direction(-1)
         ax.set_thetagrids(numpy.arange(0, 360, 90), labels=[])
-        ax.set_rgrids(r_grid, labels=[])
+        ax.set_rgrids(r_grid, ) #labels=[]
         ax.grid(alpha=0.1, color="black")
 
         # Fiz os rótulos dessa forma pra figura ficar igual aos do estereograma
@@ -160,10 +181,9 @@ class RoseChartWindow(QtWidgets.QMainWindow):
         for i in range(len(labels)):
             ax.text(label_x[i], label_y[i], labels[i], transform=ax.transAxes, ha='center', va='center')
 
-        n = len(azimuths[~numpy.isnan(azimuths)])
+        n = len(azimuths)
         ax.text(-0.05, -0.057, f"n = {n}", transform=ax.transAxes, fontsize=8.5, verticalalignment='bottom', horizontalalignment='left')
 
-        plots_folder = f"{os.getcwd()}\\plots"
-        if not os.path.exists(plots_folder):
-            os.makedirs(plots_folder)
+        plots_folder = os.path.join(os.getcwd(), "plots")
+        os.makedirs(plots_folder, exist_ok=True)
         self.fig.savefig(f"{plots_folder}\\rose_chart.png", dpi=600, format="png", transparent=True)

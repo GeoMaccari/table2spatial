@@ -108,7 +108,8 @@ class DataHandler:
         :return: Nada.
         """
         sniffer = csv.Sniffer()
-        data = open(path, "r").read(4096)
+        with open(path, 'r') as csv_file:
+            data = csv_file.read(4096)
         sep = str(sniffer.sniff(data).delimiter)
 
         # Retirar isso caso seja implementada alguma seleção manual de separador decimal
@@ -165,10 +166,10 @@ class DataHandler:
 
         for col in self.gdf.columns:
             try:
-                self.gdf[col] = self.gdf[col].replace(",", ".", regex=True).astype(float)
-                if self.gdf[col].dropna().between(y_min, y_max).all():
+                converted = self.gdf[col].replace(",", ".", regex=True).astype(float)
+                if converted.dropna().between(y_min, y_max).all():
                     y_columns.append(col)
-                if self.gdf[col].dropna().between(x_min, x_max).all():
+                if converted.dropna().between(x_min, x_max).all():
                     x_columns.append(col)
             except (ValueError, TypeError):
                 continue

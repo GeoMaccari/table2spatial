@@ -475,9 +475,8 @@ class StereogramWindow(QtWidgets.QMainWindow):
         self.save_plot()
 
     def save_plot(self):
-        plots_folder = os.getcwd() + "\\plots"
-        if not os.path.exists(plots_folder):
-            os.makedirs(plots_folder)
+        plots_folder = os.path.join(os.getcwd(), "plots")
+        os.makedirs(plots_folder, exist_ok=True)
         image_path = f"{plots_folder}\\stereogram.png"
         self.fig.savefig(image_path, dpi=600, format="png", transparent=True)
 

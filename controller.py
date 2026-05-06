@@ -392,7 +392,7 @@ class UIController:
 
             self.view.switch_stack(2)
 
-            self.view.source_crs_lbl.setText(f"SRC atual: {self.model.crs_key})")
+            self.view.source_crs_lbl.setText(f"SRC atual: {self.model.crs_key}")
 
             self.view.target_crs_cbx.addItems(sorted(CRS_DICT.keys()))
             self.view.target_crs_cbx.setCurrentText("SIRGAS 2000 (EPSG:4674)")
