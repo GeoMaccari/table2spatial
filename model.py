@@ -9,7 +9,7 @@ import re
 
 from icecream import ic
 
-# geopandas.options.io_engine = "pyogrio" #  pyogrio é melhor que fiona, mas não funciona com o pyinstaller
+#geopandas.options.io_engine = "pyogrio" #  pyogrio é melhor que fiona, mas não funciona com o pyinstaller
 
 crs_types = {
     "PJType.GEOGRAPHIC_2D_CRS": "Geographic 2D CRS",
@@ -32,7 +32,7 @@ del crs_db
 
 DTYPES_DICT = {
     "String": {
-        "pandas_dtypes": ("string", "object", "category"),
+        "pandas_dtypes": ("str", "object", "category"),
         "icon": "icons/string.png"
     },
     "Integer": {
@@ -44,11 +44,11 @@ DTYPES_DICT = {
         "icon": "icons/float.png"
     },
     "Boolean": {
-        "pandas_dtypes": ("bool"),
+        "pandas_dtypes": ("bool",),
         "icon": "icons/boolean.png"
     },
     "Datetime": {
-        "pandas_dtypes": ("datetime64[ns]", "<M8[ns]", ">M8[ns]"),
+        "pandas_dtypes": ("datetime64[ns]", "<M8[ns]", ">M8[ns]", "datetime64[us]"),
         "icon": "icons/datetime.png"
     }
 }
@@ -80,7 +80,7 @@ class DataHandler:
 
     def read_excel_file(self, path: str) -> None:
         """
-        Função que lê uma pasta de trabalho do Excel/OpenDocument e a armazena como um objeto pandas.ExcelFile no
+        Lê uma pasta de trabalho do Excel/OpenDocument e a armazena como um objeto pandas.ExcelFile no
         atributo "excel_file" da classe.
         :param path: Caminho do arquivo a ser lido.
         :return: Nada.
@@ -89,7 +89,7 @@ class DataHandler:
 
     def read_excel_sheet(self, sheet: str | int) -> None:
         """
-        Função que lê uma planilha contida no arquivo do atributo "excel_file" e armazena os dados como um
+        Lê uma planilha contida no arquivo do atributo "excel_file" e armazena os dados como um
         geopandas.GeoDataFrame no atributo "gdf" da classe. Automaticamente chama a função process_data para tratar os
         dados.
         :param sheet: O nome (str) ou índice (int) da planilha a ser lida.
@@ -100,9 +100,8 @@ class DataHandler:
 
     def read_csv_file(self, path: str, decimal: str = ',') -> None:
         """
-        Função que lê um arquivo CSV, identifica o delimitador de células e armazena os dados como um
-        geopandas.GeoDataFrame no atributo "gdf" da classe. Automaticamente chama a função process_data para tratar os
-        dados.
+        Lê um arquivo CSV, identifica o delimitador de células e armazena os dados como um geopandas.GeoDataFrame
+        no atributo "gdf" da classe. Automaticamente chama a função process_data para tratar os dados.
         :param path:  Caminho do arquivo a ser lido.
         :param decimal: O separador decimal usado no arquivo. O padrão é ',' (vírgula).
         :return: Nada.

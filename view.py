@@ -244,7 +244,7 @@ class ListRow(QtWidgets.QWidget):
 
 
 class ListWindow(QtWidgets.QMainWindow):
-    def __init__(self, values_list: list[any], has_nan: bool, parent):
+    def __init__(self, values_list: list, has_nan: bool, parent):
         super(ListWindow, self).__init__(parent)
         self.parent = parent
 

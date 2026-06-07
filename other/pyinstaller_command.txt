@@ -1,1 +1,1 @@
-pyinstaller "__main__.py" --distpath="./" --upx-dir="..\_resources\upx-4.2.4-win64" --clean --onefile --noconsole --icon="icons\globe.ico" --collect-data=geopandas
+pyinstaller "__main__.py" --distpath="./" --upx-dir="..\_resources\upx-5.1.1-win64" --clean --onefile --noconsole --icon="icons\globe.ico" --collect-data=geopandas --collect-data=fiona
