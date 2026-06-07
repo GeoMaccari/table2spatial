@@ -170,7 +170,7 @@ class RoseChartWindow(QtWidgets.QMainWindow):
         ax.set_theta_zero_location('N')
         ax.set_theta_direction(-1)
         ax.set_thetagrids(numpy.arange(0, 360, 90), labels=[])
-        ax.set_rgrids(r_grid, ) #labels=[]
+        ax.set_rgrids(r_grid, labels=[])
         ax.grid(alpha=0.1, color="black")
 
         # Fiz os rótulos dessa forma pra figura ficar igual aos do estereograma
