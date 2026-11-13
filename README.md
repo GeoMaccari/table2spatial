@@ -21,6 +21,7 @@
 - Reprojeta pontos entre diferentes SRCs
 - Exporta arquivos vetoriais de pontos nos formatos GeoPackage, GeoJSON e Shapefile para uso em SIG
 - Plota estereogramas e diagramas de roseta simples
+- Conecta pontos para gerar linhas ou polígonos
 
 ## Como Utilizar
 

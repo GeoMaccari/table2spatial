@@ -1,32 +1,23 @@
 # -*- coding: utf-8 -*-
-""" @author: Gabriel Maccari """
 
 import sys
 from PyQt6.QtWidgets import QApplication
+from PyQt6 import sip  # needed for PyInstaller
 from icecream import ic
-from platform import platform
-from PyQt6 import sip  # necessário para criar o exe com pyinstaller
 
-from controller import UIController
+from main_window import MainWindow
 
-ic.configureOutput(prefix='LOG| ', includeContext=True)
-OS = platform()
+ic.configureOutput(prefix="LOG| ", includeContext=True)
 
 
 class App(QApplication):
-    def __init__(self, sys_argv):
-        super(App, self).__init__(sys_argv)
-        self.controller = UIController()
+    def __init__(self, argv):
+        super().__init__(argv)
+        self.setStyle("windows11")  # consistent look on all platforms
+        self.window = MainWindow()
+        self.window.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = App(sys.argv)
-    if OS.startswith("Windows"):
-        app.setStyle("windowsvista")
-        with open('style/win11_light.qss', 'r') as f:
-            style = f.read()
-        app.setStyleSheet(style)
-    else:
-        app.setStyle("Fusion")
-
     sys.exit(app.exec())
