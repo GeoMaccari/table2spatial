@@ -11,6 +11,5 @@ Pillow
 pillow-heif
 pyproj
 PyQt6
-rasterio
 shapely
 simplekml

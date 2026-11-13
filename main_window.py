@@ -17,7 +17,7 @@ from window_rose_chart import RoseChartWindow
 from window_stereogram import StereogramWindow
 from window_photo_kml import PhotoKmlWindow
 from window_connect_vertices import ConnectVerticesWindow
-from window_topo_profile import TopoProfileWindow
+# from window_topo_profile import TopoProfileWindow
 
 OS = platform()
 
@@ -282,6 +282,7 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             handle_exception(e, "on_export()", "Erro ao exportar.", self)
 
+    '''
     def on_topo_profile(self) -> None:
         try:
             dlg = TopoProfileWindow(self)
@@ -289,6 +290,7 @@ class MainWindow(QtWidgets.QMainWindow):
             center_on_parent(dlg, self)
         except Exception as e:
             handle_exception(e, "on_topo_profile()", "Erro ao abrir o perfil topográfico.", self)
+    '''
 
     def on_connect_vertices(self) -> None:
         if self.model is None or not self.model.has_geometry:
