@@ -17,7 +17,7 @@ from window_rose_chart import RoseChartWindow
 from window_stereogram import StereogramWindow
 from window_photo_kml import PhotoKmlWindow
 from window_connect_vertices import ConnectVerticesWindow
-# from window_topo_profile import TopoProfileWindow
+from window_topo_profile import TopoProfileWindow
 
 OS = platform()
 
@@ -57,7 +57,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_graph     = self.make_toolbar_btn("Criar gráfico", Icons.GRAPH, has_menu=True)
         self.btn_connect   = self.make_toolbar_btn("Conectar pontos", Icons.CONNECT)
         self.btn_photo_kml = self.make_toolbar_btn("Plotar fotos como KMZ", Icons.PHOTO, enabled=True)
-        #self.btn_topo      = self.make_toolbar_btn("Gerar perfil topográfico", Icons.PROFILE, enabled=True)
+        self.btn_topo      = self.make_toolbar_btn("Gerar perfil topográfico", Icons.PROFILE, enabled=True)
 
         self.graph_menu = QtWidgets.QMenu(self)
         self.btn_graph.setMenu(self.graph_menu)
@@ -67,7 +67,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.action_histogram   = self.graph_menu.addAction("Histograma")
 
         for btn in (self.btn_import, self.btn_merge, self.btn_reproject, self.btn_export, self.btn_graph,
-                    self.btn_connect, self.btn_photo_kml):   # self.btn_topo,
+                    self.btn_connect, self.btn_photo_kml, self.btn_topo):
             toolbar.addWidget(btn)
         toolbar.addStretch()
         root.addLayout(toolbar)
@@ -97,7 +97,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ctx_delete    = self.ctx_menu.addAction(QtGui.QIcon(Icons.DELETE), "Excluir")
         self.ctx_uniques   = self.ctx_menu.addAction(QtGui.QIcon(Icons.LIST), "Listar valores únicos")
         self.ctx_stats     = self.ctx_menu.addAction(QtGui.QIcon(Icons.INFO), "Estatísticas descritivas")
-        self.ctx_histogram = self.ctx_menu.addAction(QtGui.QIcon(Icons.GRAPH), "Histograma")
         self.ctx_dtype     = self.ctx_menu.addAction(QtGui.QIcon(Icons.STRING), "Alterar tipo de dado")
 
         # ------------------------------------------------------------------ #
@@ -114,7 +113,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btn_export.clicked.connect(self.on_export)
         self.btn_connect.clicked.connect(self.on_connect_vertices)
         self.btn_photo_kml.clicked.connect(self.on_photo_kml)
-        # self.btn_topo.clicked.connect(self.on_topo_profile)
+        self.btn_topo.clicked.connect(self.on_topo_profile)
 
         self.action_stereogram.triggered.connect(self.on_stereogram)
         self.action_rosediagram.triggered.connect(self.on_rose_chart)
@@ -123,7 +122,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ctx_delete.triggered.connect(self.on_delete)
         self.ctx_uniques.triggered.connect(self.on_uniques)
         self.ctx_stats.triggered.connect(self.on_stats)
-        self.ctx_histogram.triggered.connect(self.on_ctx_histogram)
         self.ctx_dtype.triggered.connect(self.on_dtype_changed)
 
     # ------------------------------------------------------------------ #
@@ -282,7 +280,6 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             handle_exception(e, "on_export()", "Erro ao exportar.", self)
 
-    '''
     def on_topo_profile(self) -> None:
         try:
             dlg = TopoProfileWindow(self)
@@ -290,7 +287,6 @@ class MainWindow(QtWidgets.QMainWindow):
             center_on_parent(dlg, self)
         except Exception as e:
             handle_exception(e, "on_topo_profile()", "Erro ao abrir o perfil topográfico.", self)
-    '''
 
     def on_connect_vertices(self) -> None:
         if self.model is None or not self.model.has_geometry:
@@ -326,18 +322,6 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             handle_exception(e, "on_histogram()", "Erro ao abrir o histograma.", self)
 
-    def on_ctx_histogram(self) -> None:
-        row = self.current_row_index()
-        if row < 0:
-            return
-        try:
-            col = self.row_widgets[row].col_name
-            dlg = HistogramWindow(self, pandas.DataFrame(self.model.gdf), col=col)
-            dlg.show()
-            center_on_parent(dlg, self)
-        except Exception as e:
-            handle_exception(e, "on_ctx_histogram()", "Erro ao abrir o histograma.", self)
-
     def on_photo_kml(self) -> None:
         try:
             dlg = PhotoKmlWindow(self)
@@ -358,7 +342,6 @@ class MainWindow(QtWidgets.QMainWindow):
         row = self.col_list.row(item)
         dtype_key = get_dtype_key(self.row_widgets[row].col_dtype)
         self.ctx_stats.setEnabled(dtype_key in ("Integer", "Float"))
-        self.ctx_histogram.setEnabled(dtype_key in ("Integer", "Float"))
         self.ctx_menu.exec(self.col_list.viewport().mapToGlobal(pos))
 
     def current_row_index(self) -> int:
@@ -561,21 +544,32 @@ class _StatsDialog(QtWidgets.QDialog):
         def fmt(v) -> str:
             return f"{v:.6g}"
 
+        counts = series.value_counts()
+        top = counts.max()
+        if top == 1:
+            mode_txt = "—"  # every value is unique
+        else:
+            modes = sorted(counts[counts == top].index)
+            mode_txt = ", ".join(fmt(m) for m in modes[:2])
+            if len(modes) > 2:
+                mode_txt += f" (+{len(modes) - 2})"
+
         lines = [
-            f"n válidos:   {n}",
-            f"n nulos:     {n_null}",
+            f"n válidos:     {n}",
+            f"n nulos:       {n_null}",
             f"",
-            f"Mínimo:      {fmt(vmin)}",
-            f"Máximo:      {fmt(vmax)}",
-            f"Amplitude:   {fmt(vmax - vmin)}",
+            f"Mínimo:        {fmt(vmin)}",
+            f"Máximo:        {fmt(vmax)}",
+            f"Amplitude:     {fmt(vmax - vmin)}",
             f"",
-            f"Média:       {fmt(mean)}",
-            f"Mediana:     {fmt(median)}",
-            f"Desvio pad.: {fmt(std)}",
+            f"Média:         {fmt(mean)}",
+            f"Mediana:       {fmt(median)}",
+            f"Moda:          {mode_txt}",
+            f"Desvio padrão: {fmt(std)}",
             f"",
-            f"Q1 (25%):    {fmt(q1)}",
-            f"Q3 (75%):    {fmt(q3)}",
-            f"IQR:         {fmt(q3 - q1)}",
+            f"Q1 (25%):      {fmt(q1)}",
+            f"Q3 (75%):      {fmt(q3)}",
+            f"IQR:           {fmt(q3 - q1)}",
         ]
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -584,7 +578,7 @@ class _StatsDialog(QtWidgets.QDialog):
         text.setReadOnly(True)
         text.setFont(QtGui.QFont("Courier New", 9))
         text.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
-        text.setFixedSize(220, 280)
+        text.setFixedSize(220, 250)
         layout.addWidget(text)
 
         ok_btn = QtWidgets.QPushButton("OK")

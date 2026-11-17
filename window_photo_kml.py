@@ -1,13 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-window_photo_kml.py — Reads GPS metadata from photographs in a folder and
-exports a KMZ file with each geotagged photo plotted on the map.
-
-Dependencies:
-    Pillow        >= 10.0
-    pillow-heif   >= 0.13
-    simplekml     >= 1.3
-"""
 
 import io
 import os

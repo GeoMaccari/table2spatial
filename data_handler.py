@@ -22,7 +22,7 @@ from pandas.api.types import (
 )
 
 
-geopandas.options.io_engine = "fiona"
+# geopandas.options.io_engine = "fiona"
 
 
 # ---------------------------------------------------------------------------
@@ -122,6 +122,7 @@ class DataHandler:
 
     def __init__(self):
         self.excel_file: pandas.ExcelFile | None = None
+        self.sheet_name: str | None = None  # sheet the current table was read from
         self.gdf: geopandas.GeoDataFrame | None = None
         self.crs_key: str | None = None
         self.has_geometry: bool = False
@@ -137,6 +138,7 @@ class DataHandler:
 
     def read_excel_sheet(self, sheet: str | int) -> None:
         df = self.process_data(self.excel_file.parse(sheet_name=sheet))
+        self.sheet_name = self.excel_file.sheet_names[sheet] if isinstance(sheet, int) else sheet
         self.gdf = geopandas.GeoDataFrame(df)
 
     def read_csv_file(self, path: str) -> None:
@@ -146,6 +148,7 @@ class DataHandler:
         df = self.process_data(pandas.read_csv(path, delimiter=sep, decimal=decimal))
         self.gdf = geopandas.GeoDataFrame(df)
         self.excel_file = None
+        self.sheet_name = None
 
     @staticmethod
     def process_data(df: pandas.DataFrame) -> pandas.DataFrame:
@@ -249,46 +252,59 @@ class DataHandler:
     # ------------------------------------------------------------------
 
     def merge_sheets(self, merge_column: str) -> tuple[list, list]:
-        """Merges all sheets of the open ExcelFile on the given column."""
-        dfs, merged, skipped, dtypes = [], [], [], []
+        """
+        Merges the other sheets of the open ExcelFile into the imported table, matching rows by `merge_column`.
 
+        The imported table is the base: its rows keep their order and their own geometry. Rows that only exist in
+        other sheets are added at the end, without geometry.
+        Returns (names of the sheets included, names of the sheets skipped).
+        """
+        base = pandas.DataFrame(self.gdf)
+        geometry_name = self.gdf.geometry.name if self.has_geometry else None
+
+        if merge_column not in base.columns:
+            raise ValueError(f"A coluna '{merge_column}' não existe na tabela importada.")
+        if base[merge_column].duplicated().any():
+            raise ValueError(f"A coluna '{merge_column}' possui valores duplicados na planilha '{self.sheet_name}'.")
+
+        merged, skipped, others = [self.sheet_name], [], []
         for sheet in self.excel_file.sheet_names:
-            if sheet == self.excel_file.sheet_names[0]:
-                df = pandas.DataFrame(self.gdf).drop(columns=["geometry"], errors="ignore")
-            else:
-                df = self.excel_file.parse(sheet_name=sheet)
-
+            if sheet == self.sheet_name:
+                continue
+            try:
+                df = self.process_data(self.excel_file.parse(sheet_name=sheet))
+            except IndexError:  # empty sheet
+                skipped.append(sheet)
+                continue
             if merge_column not in df.columns:
                 skipped.append(sheet)
                 continue
-
             if df[merge_column].duplicated().any():
                 raise ValueError(f"A coluna '{merge_column}' possui valores duplicados na planilha '{sheet}'.")
+            others.append(df)
+            merged.append(sheet)
 
-            try:
-                dfs.append(self.process_data(df))
-                merged.append(sheet)
-                dtypes.append(df[merge_column].dtype)
-            except IndexError:
-                skipped.append(sheet)
-
-        if len(set(str(d) for d in dtypes)) > 1:
-            for df in dfs:
+        # The key must have the same type everywhere, or the values won't match
+        if len({str(d[merge_column].dtype) for d in [base, *others]}) > 1:
+            base[merge_column] = base[merge_column].astype(str)
+            for df in others:
                 df[merge_column] = df[merge_column].astype(str)
 
-        result = dfs[0]
-        for df in dfs[1:]:
-            result = pandas.merge(result, df, how="outer", on=merge_column)
+        result = base
+        for df in others:
+            only_in_sheet = df[~df[merge_column].isin(result[merge_column])]
+            result = pandas.merge(result, df, how="left", on=merge_column)  # a left merge keeps the row order
+            if not only_in_sheet.empty:
+                result = pandas.concat([result, only_in_sheet], ignore_index=True)
 
-        # Keep merge_column first
-        cols = [merge_column] + [c for c in result.columns if c != merge_column]
-        result = result[cols]
+        # Key first, geometry last
+        columns = [merge_column] + [c for c in result.columns if c not in (merge_column, geometry_name)]
+        if geometry_name:
+            columns.append(geometry_name)
+            self.gdf = geopandas.GeoDataFrame(result[columns], geometry=geometry_name, crs=self.gdf.crs)
+        else:
+            self.gdf = geopandas.GeoDataFrame(result[columns])
 
-        self.gdf = geopandas.GeoDataFrame(
-            result,
-            geometry=None if not self.has_geometry else self.gdf.geometry,
-            crs=None if not self.has_geometry else self.gdf.crs,
-        )
         return merged, skipped
 
     # ------------------------------------------------------------------

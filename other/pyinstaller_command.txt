@@ -1,1 +1,1 @@
-pyinstaller "__main__.py" --distpath="./" --upx-dir="..\_resources\upx-5.1.1-win64" --clean --onefile --noconsole --icon="icons\globe.ico" --collect-data=geopandas --collect-data=fiona
+pyinstaller "__main__.py" --name table2spatial-v4.1.0-win64 --distpath="./" --icon="appdata\icons\globe.ico" --upx-dir="..\_resources\upx-5.3.0-win64" --clean --onefile --noconsole --collect-all pyogrio --collect-all pyproj --collect-all rasterio
